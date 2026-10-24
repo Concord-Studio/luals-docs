@@ -49,7 +49,7 @@ export interface GenerateOptions {
 }
 
 export interface Manifest {
-	sidebar: ManifestGroup[];
+	groups: ManifestGroup[];
 	symbolIndex: Record<string, string>;
 }
 
@@ -144,17 +144,17 @@ export function runGenerate(options: GenerateOptions): GenerateResult {
 	const seeIndex = buildSeeIndex(pages);
 	const summaries = pageSummaries(pages);
 
-	const manifest: Manifest = { sidebar: [], symbolIndex: {} };
+	const manifest: Manifest = { groups: [], symbolIndex: {} };
 
 	let order = 1;
-	for (const group of config.sidebar) {
+	for (const group of config.groups) {
 		const kindSet = new Set(group.kinds);
 		const items: ManifestItem[] = [];
 		for (const page of pages.filter((p) => kindSet.has(p.kind))) {
 			items.push({ label: page.title, slug: page.routeSlug });
 		}
 		if (items.length) {
-			manifest.sidebar.push({ label: group.label, items });
+			manifest.groups.push({ label: group.label, items });
 		}
 	}
 
@@ -168,7 +168,7 @@ export function runGenerate(options: GenerateOptions): GenerateResult {
 		if (page.docs.index) {
 			const scope = collectIndexScope(page, pages, config.inputDir);
 			const scopedManifest = buildManifestForScope(page, scope, config);
-			if (scopedManifest.sidebar.length) {
+			if (scopedManifest.groups.length) {
 				indexMarkdown = renderApiIndex(scopedManifest, summaries, templates);
 			}
 		}

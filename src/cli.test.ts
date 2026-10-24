@@ -53,7 +53,7 @@ test("usage text lists the config, output, and index JSON flags", () => {
 
 test("formatBuildSummary reports files, removals, and index JSON", () => {
 	const text = formatBuildSummary({
-		manifest: { sidebar: [], symbolIndex: {} },
+		manifest: { groups: [], symbolIndex: {} },
 		outDir: "/tmp/docs",
 		pageCount: 2,
 		fileCount: 5,

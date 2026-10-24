@@ -48,7 +48,7 @@ end
 		inputDir,
 		outputDir: path.join(root, "out"),
 		routePrefix: "api",
-		sidebar: [{ label: "Classes", kinds: ["class"] }],
+		groups: [{ label: "Classes", kinds: ["class"] }],
 		pages: [rel],
 		templatesDir: path.join(root, "templates"),
 	};
@@ -126,7 +126,7 @@ end
 		inputDir,
 		outputDir: path.join(root, "out"),
 		routePrefix: "api",
-		sidebar: [{ label: "Classes", kinds: ["class"] }],
+		groups: [{ label: "Classes", kinds: ["class"] }],
 		pages: [rel],
 		templatesDir: path.join(root, "templates"),
 	};

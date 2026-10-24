@@ -131,9 +131,9 @@ export function buildManifestForScope(
 	scope: ParsedPage[],
 	config: ResolvedConfig,
 ): Manifest {
-	const manifest: Manifest = { sidebar: [], symbolIndex: {} };
+	const manifest: Manifest = { groups: [], symbolIndex: {} };
 
-	for (const group of config.sidebar) {
+	for (const group of config.groups) {
 		const kindSet = new Set(group.kinds);
 		const items: ManifestItem[] = [];
 		for (const page of scope) {
@@ -142,7 +142,7 @@ export function buildManifestForScope(
 			items.push({ label: page.title, slug: page.routeSlug });
 		}
 		if (items.length) {
-			manifest.sidebar.push({ label: group.label, items });
+			manifest.groups.push({ label: group.label, items });
 		}
 	}
 

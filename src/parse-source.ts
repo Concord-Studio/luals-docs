@@ -330,11 +330,11 @@ export function parseSourcePages(config: ResolvedConfig): ParsedPage[] {
 		});
 	}
 
-	const allowedKinds = new Set(config.sidebar.flatMap((group) => group.kinds));
+	const allowedKinds = new Set(config.groups.flatMap((group) => group.kinds));
 	for (const page of pages) {
 		if (!allowedKinds.has(page.kind)) {
 			throw new Error(
-				`${page.relFile}: ---@docs kind "${page.kind}" is not listed in any sidebar group`,
+				`${page.relFile}: ---@docs kind "${page.kind}" is not listed in any groups entry`,
 			);
 		}
 	}

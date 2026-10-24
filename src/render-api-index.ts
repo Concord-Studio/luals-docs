@@ -8,7 +8,7 @@ export function renderApiIndex(
 	summaries: Map<string, string>,
 	templates: Templates = defaultTemplates(),
 ): string {
-	const groups = manifest.sidebar
+	const groups = manifest.groups
 		.filter((group) => group.items?.length)
 		.map((group) => ({
 			label: group.label,

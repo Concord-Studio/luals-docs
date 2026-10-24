@@ -5,7 +5,7 @@ import { defaultTemplatesDir } from "./templates.js";
 
 export const CONFIG_FILENAME = ".luals-docs.json";
 
-export interface SidebarGroupSpec {
+export interface KindGroup {
 	label: string;
 	kinds: string[];
 }
@@ -22,7 +22,10 @@ export interface LualsDocsConfigFile {
 	/** Directory of Nunjucks page templates. Defaults to the built-in set. */
 	templatesDir?: string;
 	routePrefix?: string;
-	sidebar?: SidebarGroupSpec[];
+	/** Ordered groups of `@docs kind` names. */
+	groups?: KindGroup[];
+	/** Removed. Use `groups`. */
+	sidebar?: KindGroup[];
 }
 
 export interface ResolvedConfig {
@@ -33,7 +36,7 @@ export interface ResolvedConfig {
 	indexJson?: string;
 	templatesDir: string;
 	routePrefix: string;
-	sidebar: SidebarGroupSpec[];
+	groups: KindGroup[];
 	/** Workspace-relative `.lua` paths (discovered under `inputDir`). */
 	pages: string[];
 }
@@ -102,18 +105,23 @@ export function loadConfig(configPath: string): ResolvedConfig {
 		throw new Error(`${CONFIG_FILENAME}: "inputDir" is required`);
 	}
 
-	if (!raw.sidebar?.length) {
-		throw new Error(`${CONFIG_FILENAME}: "sidebar" must be a non-empty array`);
+	if (raw.sidebar !== undefined) {
+		throw new Error(`${CONFIG_FILENAME}: "sidebar" was renamed to "groups"`);
 	}
 
-	for (const [i, group] of raw.sidebar.entries()) {
+	const groups = raw.groups ?? [];
+	if (!groups.length) {
+		throw new Error(`${CONFIG_FILENAME}: "groups" must be a non-empty array`);
+	}
+
+	for (const [i, group] of groups.entries()) {
 		if (!group.label || !group.kinds?.length) {
 			throw new Error(
-				`${CONFIG_FILENAME}: sidebar[${i}] requires label and non-empty kinds`,
+				`${CONFIG_FILENAME}: groups[${i}] requires label and non-empty kinds`,
 			);
 		}
 		for (const kind of group.kinds) {
-			assertKindName(kind, `sidebar[${i}]`);
+			assertKindName(kind, `groups[${i}]`);
 		}
 	}
 
@@ -152,7 +160,7 @@ export function loadConfig(configPath: string): ResolvedConfig {
 		indexJson,
 		templatesDir,
 		routePrefix,
-		sidebar: raw.sidebar,
+		groups,
 		pages,
 	};
 }

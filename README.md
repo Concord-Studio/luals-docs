@@ -9,7 +9,7 @@ Place `.luals-docs.json` at the repository root. The CLI walks upward from the c
 | Field | Purpose |
 | ------- | --------- |
 | **`inputDir`** | Library root. All `.lua` files under it are scanned recursively; a file is documented when it has `---@docs kind` (use `---@docs off` to exclude). |
-| **`sidebar`** | Groups links on the `---@docs index` page by `@docs kind`. |
+| **`groups`** | Ordered groups of `@docs kind` names. Index JSON and `---@docs index` pages follow this array. |
 | **`outputDir`** | Where `.md` files are written. |
 | **`routePrefix`** | First URL segment for automatic routes (default `api`). |
 | **`indexJson`** | Optional path for the documentation index JSON (see below). |
@@ -26,7 +26,7 @@ Page layout comes from [Nunjucks](https://mozilla.github.io/nunjucks/) files. [T
 | Directive | Purpose |
 | ----------- | --------- |
 | `@docs off` | Skip Markdown for this file |
-| `@docs kind <name>` | **Required** on every documented file. `name` must be listed in a config `sidebar` group (for example `module` or `class`). |
+| `@docs kind <name>` | **Required** on every documented file. `name` must be listed in a config `groups` entry (for example `module` or `class`). |
 | `@docs slug <path>` | Route override (default: path under `inputDir`, e.g. `api/world`) |
 | `@docs index` | Folder barrel: lists siblings in the same directory; each immediate subfolder is either one nested index (if that folder has its own `@docs index`) or all documented pages under that subfolder. One index per folder. |
 | `@docs order <n>` | Sort order in the index JSON and the page template variable `order` (index entry defaults to `0`). |
@@ -48,7 +48,7 @@ npm install -g @concord.studio/luals-docs
 
 From a checkout of this repository, `pnpm install-local` builds the package, packs it, and installs that tarball globally. The binary is placed in `PNPM_HOME` when that variable is set, and next to the current `node` binary otherwise, so `luals-docs` is on your PATH. The installed files are the same ones an npm install would get.
 
-Publishing runs from [`.github/workflows/publish.yml`](.github/workflows/publish.yml) when a GitHub Release is published. Tag the release `v` plus the version in `package.json` (a `1.1.0` package needs the tag `v1.1.0`). That workflow is what stages the package on npm, using [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/) and [staged publishing](https://docs.npmjs.com/staged-publishing/). Approve the staged version with two-factor authentication, on npm’s Staged Packages tab or with `npm stage approve`, before it can be installed.
+Publishing runs from [`.github/workflows/publish.yml`](.github/workflows/publish.yml) when a GitHub Release is published. Tag the release `v` plus the version in `package.json` (a `1.2.0` package needs the tag `v1.2.0`). That workflow is what stages the package on npm, using [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/) and [staged publishing](https://docs.npmjs.com/staged-publishing/). Approve the staged version with two-factor authentication, on npm’s Staged Packages tab or with `npm stage approve`, before it can be installed.
 
 On the package’s Settings → Trusted publishing page, add GitHub Actions with organization `Concord-Studio`, repository `luals-docs`, and workflow filename `publish.yml`. Leave the environment blank, and leave direct `npm publish` turned off. Publish the release within two days of saving a new trusted publisher, then approve the staged package. After that stage succeeds, set the package’s publishing access to require two-factor authentication and disallow tokens.
 
@@ -93,10 +93,10 @@ When `indexJson` is set, the generator writes a JSON index of the documented pag
 Structure:
 
 1. A `{ title, route }` entry for each root `@docs index` page.
-2. A `{ label, items }` group for each nested `@docs index`, then one for each config `sidebar` kind group.
+2. Configured groups, in the order of the `groups` array. A nested `@docs index` is placed with the group its pages belong to. Other pages of those kinds follow in a `{ label, items }` group. A group with nothing to list is omitted.
 3. Index pages are not repeated inside kind groups. Member and type pages are omitted.
 
-`route` matches the page’s `route` frontmatter. `title` is `---@docs title` or the inferred name. Nested index group labels use the `sidebar` config when the pages in that folder fit one kind group. Order uses `---@docs order`, then discovery order.
+`route` matches the page’s `route` frontmatter. `title` is `---@docs title` or the inferred name. A nested index uses the `groups` label when every page in that folder fits one group. Otherwise it uses `---@docs title` and is listed after the root indexes, before the configured groups. Item order uses `---@docs order`, then discovery order.
 
 ## Hub and method pages
 

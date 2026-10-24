@@ -53,33 +53,54 @@ function link(page: ParsedPage): IndexLink {
 	return { title: page.title, route: page.routeSlug };
 }
 
-/** Label for a nested `@docs index` group from config `sidebar`, not `@docs title`. */
-function nestedIndexLabel(
+/** Narrowest config group whose kinds cover every page in a nested index. */
+function groupIndexForScope(
 	scope: ParsedPage[],
 	config: ResolvedConfig,
-	fallback: string,
-): string {
-	if (!scope.length) return fallback;
+): number | undefined {
+	if (!scope.length) return undefined;
 
 	const scopedKinds = new Set(scope.map((p) => p.kind));
-	let label: string | undefined;
+	let match: number | undefined;
 	let narrowest = Number.POSITIVE_INFINITY;
 
-	for (const group of config.sidebar) {
+	for (const [i, group] of config.groups.entries()) {
 		const groupKinds = new Set(group.kinds);
 		if (![...scopedKinds].every((k) => groupKinds.has(k))) continue;
 		if (group.kinds.length < narrowest) {
 			narrowest = group.kinds.length;
-			label = group.label;
+			match = i;
 		}
 	}
 
-	return label ?? fallback;
+	return match;
+}
+
+function nestedIndexEntry(
+	indexPage: ParsedPage,
+	pages: ParsedPage[],
+	config: ResolvedConfig,
+	orders: Map<string, number>,
+): { groupIndex: number | undefined; entry: IndexGroup } {
+	const scope = collectIndexScope(indexPage, pages, config.inputDir);
+	const groupIndex = groupIndexForScope(scope, config);
+	const groupPages = sortPages([indexPage, ...scope], orders);
+	return {
+		groupIndex,
+		entry: {
+			label:
+				groupIndex === undefined
+					? indexPage.title
+					: (config.groups[groupIndex]?.label ?? indexPage.title),
+			items: groupPages.map(link),
+		},
+	};
 }
 
 /**
- * Index fragment: root `@docs index` pages, then nested index groups,
- * then configured kind groups. Index pages are not repeated inside kind groups.
+ * Index fragment: root `@docs index` links, then config groups in array order.
+ * A nested `@docs index` is emitted with the group its pages belong to.
+ * Index pages are not repeated inside kind groups.
  */
 export function buildIndexJson(
 	pages: ParsedPage[],
@@ -111,16 +132,28 @@ export function buildIndexJson(
 		result.push(link(p));
 	}
 
+	const nestedByGroup = new Map<number, IndexGroup[]>();
 	for (const indexPage of nestedIndexes) {
-		const scope = collectIndexScope(indexPage, pages, config.inputDir);
-		const groupPages = sortPages([indexPage, ...scope], orders);
-		result.push({
-			label: nestedIndexLabel(scope, config, indexPage.title),
-			items: groupPages.map(link),
-		});
+		const { groupIndex, entry } = nestedIndexEntry(
+			indexPage,
+			pages,
+			config,
+			orders,
+		);
+		if (groupIndex === undefined) {
+			result.push(entry);
+			continue;
+		}
+		const list = nestedByGroup.get(groupIndex) ?? [];
+		list.push(entry);
+		nestedByGroup.set(groupIndex, list);
 	}
 
-	for (const group of config.sidebar) {
+	for (const [i, group] of config.groups.entries()) {
+		for (const entry of nestedByGroup.get(i) ?? []) {
+			result.push(entry);
+		}
+
 		const kindSet = new Set(group.kinds);
 		const items = sortPages(
 			pages.filter(
