@@ -1,0 +1,24 @@
+{% if base %}
+
+Extends {{ base }}.
+{% endif %}
+{% if definition %}
+
+```lua
+{{ definition }}
+```
+{% endif %}
+{% for group in fieldGroups %}
+
+{% if group.packageNote %}
+Fields marked **package** are only part of the public API within the same Lua file.
+
+{% endif %}
+#### {{ group.title }}
+
+| Name | Type | Description |
+| --- | --- | --- |
+{% for field in group.fields %}
+| `{{ field.name }}` | {{ field.types }} | {{ field.desc }} |
+{% endfor %}
+{% endfor %}

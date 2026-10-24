@@ -1,0 +1,8 @@
+node_modules/
+*.tgz
+dist/
+bin/
+.cache/
+out/
+.DS_Store
+tsconfig.tsbuildinfo

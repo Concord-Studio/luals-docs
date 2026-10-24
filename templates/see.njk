@@ -1,0 +1,5 @@
+### See also
+
+{% for item in see %}
+{{ ("- [" + item.label + "](" + item.href + ")") if item.href else ("- `" + item.label + "`") }}
+{% endfor %}

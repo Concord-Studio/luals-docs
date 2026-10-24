@@ -1,0 +1,17 @@
+{% include "require.njk" %}
+{% if primary %}
+
+{{ primary }}
+{% endif %}
+{% if methods.length %}
+
+{% include "methods.njk" %}
+{% endif %}
+{% if types.length %}
+
+{% include "types.njk" %}
+{% endif %}
+{% if index %}
+
+{{ index }}
+{% endif %}

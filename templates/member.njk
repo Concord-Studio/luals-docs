@@ -1,0 +1,72 @@
+[← {{ parentTitle }}]({{ parentHref }})
+{% if not multi %}
+{% if summary %}
+
+{{ summary }}
+{% endif %}
+{% if description %}
+
+{{ description }}
+{% endif %}
+{% endif %}
+{% for variant in variants %}
+{% if variant.separator %}
+---
+
+{% endif %}
+{% if variant.multi %}
+
+### `{{ variant.usage }}`
+{% if variant.prose %}
+
+{{ variant.prose }}
+{% endif %}
+
+```lua
+{{ variant.usage }}
+```
+{% else %}
+
+```lua
+{{ variant.usage }}
+```
+{% endif %}
+{% if variant.description %}
+
+{{ variant.description }}
+{% endif %}
+{% if variant.arguments.length %}
+
+{{ variant.argumentHeading }}
+
+| Name | Type | Description |
+| --- | --- | --- |
+{% for row in variant.arguments %}
+| `{{ row.name }}` | {{ row.types }} | {{ row.desc }} |
+{% endfor %}
+{% endif %}
+{% if variant.returns.length %}
+
+{{ variant.returnHeading }}
+
+| Name | Type | Description |
+| --- | --- | --- |
+{% for row in variant.returns %}
+| {% if row.name %}`{{ row.name }}`{% endif %} | {{ row.types }} | {{ row.desc }} |
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% if usageBlocks.length %}
+
+### Usage
+{% for block in usageBlocks %}
+
+```lua
+{{ block }}
+```
+{% endfor %}
+{% endif %}
+{% if see.length %}
+
+{% include "see.njk" %}
+{% endif %}

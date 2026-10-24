@@ -1,0 +1,48 @@
+{
+	"name": "@concord.studio/luals-docs",
+	"version": "1.0.0",
+	"description": "Generate API documentation from Lua Language Server annotations.",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Concord-Studio/luals-docs.git"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"type": "module",
+	"bin": {
+		"luals-docs": "./dist/cli.js"
+	},
+	"files": [
+		"dist",
+		"templates",
+		"TEMPLATES.md",
+		"vendor/tree-sitter-lua.wasm",
+		"!dist/**/*.test.*"
+	],
+	"scripts": {
+		"build": "tsc",
+		"clean": "rm -rf dist tsconfig.tsbuildinfo",
+		"docs": "pnpm build && node dist/cli.js",
+		"install-local": "node scripts/install-local.mjs",
+		"lint": "biome check .",
+		"prepublishOnly": "pnpm clean && pnpm build",
+		"test": "pnpm build && node --test dist/*.test.js",
+		"update-grammar": "node scripts/update-grammar.mjs"
+	},
+	"engines": {
+		"node": ">=20"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.9",
+		"@types/node": "^22.20.5",
+		"@types/nunjucks": "^3.2.6",
+		"typescript": "^7.0.2"
+	},
+	"packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b",
+	"dependencies": {
+		"marked": "^18.1.1",
+		"nunjucks": "^3.2.4",
+		"web-tree-sitter": "0.27.1"
+	}
+}

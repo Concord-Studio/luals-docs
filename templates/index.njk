@@ -1,0 +1,10 @@
+{% for group in groups %}
+## {{ group.label }}
+
+{% for item in group.items %}
+{{ "- [" + item.label + "](" + item.href + ")" + (" — " + item.blurb if item.blurb else "") }}
+{% endfor %}
+{% if not loop.last %}
+
+{% endif %}
+{% endfor %}
