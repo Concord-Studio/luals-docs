@@ -1,6 +1,6 @@
 # Templates
 
-Page layout is a set of [Nunjucks](https://mozilla.github.io/nunjucks/) files. The files in [`templates/`](templates/) are the built-in Starlight layout. To change the layout, copy that directory, edit the copies, and point `.luals-docs.json` at the copy:
+Page layout is a set of [Nunjucks](https://mozilla.github.io/nunjucks/) files. The files in [`templates/`](templates/) are the built-in layout. To change part of it, put only the files you want to replace in another directory and point `.luals-docs.json` at that directory:
 
 ```json
 {
@@ -8,7 +8,7 @@ Page layout is a set of [Nunjucks](https://mozilla.github.io/nunjucks/) files. T
 }
 ```
 
-`templatesDir` is relative to the workspace root. That is the directory containing `.luals-docs.json`, unless `workspaceRoot` is set. Every file listed below must be present. A missing file stops the build with the file name.
+`templatesDir` is relative to the workspace root. That is the directory containing `.luals-docs.json`, unless `workspaceRoot` is set. A file in that directory replaces the built-in file of the same name. Every other template stays on the built-in version, including files pulled in with `{% include %}`. The directory itself has to exist. A template that is missing from both directories stops the build with the file name.
 
 The environment uses `trimBlocks` and `lstripBlocks`, and it does not HTML-escape values. A newline directly after `{% %}` is removed. A line that ends in `{% endif %}` loses its trailing newline, so list items in [`index.njk`](templates/index.njk) and [`see.njk`](templates/see.njk) are built as one string.
 
@@ -51,7 +51,7 @@ Type strings, the `base` class line, and table descriptions are already Markdown
 | `order` | hubs | `@docs order`, or `0` for an index page. Omitted on member and type pages. `0` is a real value, so test `order is defined` |
 | `body` | `page.njk` only | The rendered hub, member, or type template |
 
-The built-in frontmatter writes Starlight fields. `slug` is `route`. Member and type pages set `sidebar.hidden`. The table of contents range is fixed in the template.
+The built-in frontmatter writes `title`, `description`, `route`, and `order` when `order` is defined. `route` has no leading slash.
 
 ## `hub.njk`
 
@@ -132,7 +132,7 @@ Rendered only for a file with `@docs index`, then inserted into the hub as `inde
 
 | Variable | Meaning |
 | --- | --- |
-| `groups[].label` | Sidebar group label |
+| `groups[].label` | Index group label |
 | `groups[].items[].label` | Page title |
 | `groups[].items[].href` | Page URL |
 | `groups[].items[].blurb` | Page summary, or `""` |

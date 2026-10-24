@@ -1,17 +1,9 @@
 ---
 title: {{ title | yaml }}
 description: {{ description | yaml }}
-slug: {{ route }}
+route: {{ route }}
 {% if order is defined %}
-sidebar:
-  order: {{ order }}
+order: {{ order }}
 {% endif %}
-{% if kind == "member" or kind == "type" %}
-sidebar:
-  hidden: true
-{% endif %}
-tableOfContents:
-  minHeadingLevel: 2
-  maxHeadingLevel: 2
 ---
 

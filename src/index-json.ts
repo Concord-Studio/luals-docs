@@ -15,25 +15,21 @@ function isUnderNestedFolderBarrel(
 	return indexFolders.has(folder);
 }
 
-/** Starlight internal link: https://starlight.astro.build/guides/sidebar/ */
-export interface StarlightSidebarLink {
-	slug: string;
+export interface IndexLink {
+	title: string;
+	route: string;
 }
 
-/** Starlight sidebar group with `label` + `items`. */
-export interface StarlightSidebarGroup {
+export interface IndexGroup {
 	label: string;
-	items: StarlightSidebarLink[];
+	items: IndexLink[];
 }
 
-/** Top-level slug links and/or groups (valid `starlight.sidebar` entries). */
-export type StarlightSidebarEntry =
-	| StarlightSidebarLink
-	| StarlightSidebarGroup;
+export type IndexEntry = IndexLink | IndexGroup;
 
-export type StarlightSidebarExport = StarlightSidebarEntry[];
+export type IndexJson = IndexEntry[];
 
-function starlightOrderForPages(pages: ParsedPage[]): Map<string, number> {
+function orderForPages(pages: ParsedPage[]): Map<string, number> {
 	let order = 1;
 	const map = new Map<string, number>();
 	for (const page of pages) {
@@ -53,8 +49,12 @@ function sortPages(
 	});
 }
 
+function link(page: ParsedPage): IndexLink {
+	return { title: page.title, route: page.routeSlug };
+}
+
 /** Label for a nested `@docs index` group from config `sidebar`, not `@docs title`. */
-function nestedIndexSidebarLabel(
+function nestedIndexLabel(
 	scope: ParsedPage[],
 	config: ResolvedConfig,
 	fallback: string,
@@ -78,15 +78,15 @@ function nestedIndexSidebarLabel(
 }
 
 /**
- * Starlight sidebar fragment: root entry barrel(s), then configured kind groups
- * (objects, submodules, etc.) without index/barrel pages mixed into groups.
+ * Index fragment: root `@docs index` pages, then nested index groups,
+ * then configured kind groups. Index pages are not repeated inside kind groups.
  */
-export function buildStarlightSidebar(
+export function buildIndexJson(
 	pages: ParsedPage[],
 	config: ResolvedConfig,
-): StarlightSidebarExport {
-	const orders = starlightOrderForPages(pages);
-	const result: StarlightSidebarExport = [];
+): IndexJson {
+	const orders = orderForPages(pages);
+	const result: IndexJson = [];
 
 	const indexFolders = new Set<string>();
 	for (const p of pages) {
@@ -108,15 +108,15 @@ export function buildStarlightSidebar(
 	);
 
 	for (const p of rootIndexes) {
-		result.push({ slug: p.routeSlug });
+		result.push(link(p));
 	}
 
 	for (const indexPage of nestedIndexes) {
 		const scope = collectIndexScope(indexPage, pages, config.inputDir);
 		const groupPages = sortPages([indexPage, ...scope], orders);
 		result.push({
-			label: nestedIndexSidebarLabel(scope, config, indexPage.title),
-			items: groupPages.map((p) => ({ slug: p.routeSlug })),
+			label: nestedIndexLabel(scope, config, indexPage.title),
+			items: groupPages.map(link),
 		});
 	}
 
@@ -130,7 +130,7 @@ export function buildStarlightSidebar(
 					!isUnderNestedFolderBarrel(p, indexFolders, config.inputDir),
 			),
 			orders,
-		).map((p) => ({ slug: p.routeSlug }));
+		).map(link);
 
 		if (items.length) {
 			result.push({ label: group.label, items });
@@ -140,13 +140,13 @@ export function buildStarlightSidebar(
 	return result;
 }
 
-export function writeStarlightSidebarJson(
-	sidebarPath: string,
+export function writeIndexJson(
+	indexJsonPath: string,
 	pages: ParsedPage[],
 	config: ResolvedConfig,
 ): void {
-	const abs = path.resolve(sidebarPath);
+	const abs = path.resolve(indexJsonPath);
 	mkdirSync(path.dirname(abs), { recursive: true });
-	const sidebar = buildStarlightSidebar(pages, config);
-	writeFileSync(abs, `${JSON.stringify(sidebar, null, 2)}\n`, "utf8");
+	const index = buildIndexJson(pages, config);
+	writeFileSync(abs, `${JSON.stringify(index, null, 2)}\n`, "utf8");
 }

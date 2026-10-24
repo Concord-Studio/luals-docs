@@ -15,7 +15,9 @@ export interface LualsDocsConfigFile {
 	workspaceRoot?: string;
 	inputDir?: string;
 	outputDir?: string;
-	/** If set, write Starlight sidebar JSON (groups + slugs) to this path. */
+	/** If set, write the documentation index JSON to this path. */
+	indexJson?: string;
+	/** Removed. Use `indexJson`. */
 	sidebarPath?: string;
 	/** Directory of Nunjucks page templates. Defaults to the built-in set. */
 	templatesDir?: string;
@@ -28,7 +30,7 @@ export interface ResolvedConfig {
 	workspaceRoot: string;
 	inputDir: string;
 	outputDir: string;
-	sidebarPath?: string;
+	indexJson?: string;
 	templatesDir: string;
 	routePrefix: string;
 	sidebar: SidebarGroupSpec[];
@@ -122,10 +124,16 @@ export function loadConfig(configPath: string): ResolvedConfig {
 		);
 	}
 
+	if (raw.sidebarPath !== undefined) {
+		throw new Error(
+			`${CONFIG_FILENAME}: "sidebarPath" was renamed to "indexJson"`,
+		);
+	}
+
 	const outputDir = resolveFrom(workspaceRoot, raw.outputDir ?? "docs/api");
 	const routePrefix = raw.routePrefix ?? "api";
-	const sidebarPath = raw.sidebarPath
-		? resolveFrom(workspaceRoot, raw.sidebarPath)
+	const indexJson = raw.indexJson
+		? resolveFrom(workspaceRoot, raw.indexJson)
 		: undefined;
 	const templatesDir = raw.templatesDir
 		? resolveFrom(workspaceRoot, raw.templatesDir)
@@ -141,7 +149,7 @@ export function loadConfig(configPath: string): ResolvedConfig {
 		workspaceRoot,
 		inputDir,
 		outputDir,
-		sidebarPath,
+		indexJson,
 		templatesDir,
 		routePrefix,
 		sidebar: raw.sidebar,

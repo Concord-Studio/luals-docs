@@ -38,15 +38,19 @@ export function defaultTemplatesDir(): string {
 }
 
 export function loadTemplates(dir = defaultTemplatesDir()): Templates {
-	const root = path.resolve(dir);
+	const override = path.resolve(dir);
+	const builtin = path.resolve(defaultTemplatesDir());
+	const roots = override === builtin ? [builtin] : [override, builtin];
 	for (const name of TEMPLATE_NAMES) {
-		const file = path.join(root, `${name}.njk`);
-		if (!existsSync(file)) {
-			throw new Error(`Template "${name}" not found (${file})`);
+		const found = roots.some((root) =>
+			existsSync(path.join(root, `${name}.njk`)),
+		);
+		if (!found) {
+			throw new Error(`Template "${name}" not found in ${roots.join(" or ")}`);
 		}
 	}
 
-	const env = new Environment(new FileSystemLoader(root), {
+	const env = new Environment(new FileSystemLoader(roots), {
 		autoescape: false,
 		trimBlocks: true,
 		lstripBlocks: true,

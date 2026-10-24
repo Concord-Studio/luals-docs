@@ -20,19 +20,18 @@ export interface CliArgs {
 	version: boolean;
 	configPath?: string;
 	outDir?: string;
-	sidebarPath?: string;
+	indexJson?: string;
 }
 
 const VALUE_FLAGS: Record<
 	string,
-	keyof Pick<CliArgs, "configPath" | "outDir" | "sidebarPath">
+	keyof Pick<CliArgs, "configPath" | "outDir" | "indexJson">
 > = {
 	"--config": "configPath",
 	"-c": "configPath",
 	"--out": "outDir",
 	"-o": "outDir",
-	"--sidebar": "sidebarPath",
-	"-s": "sidebarPath",
+	"--index-json": "indexJson",
 };
 
 export function readVersion(): string {
@@ -44,7 +43,7 @@ export function usageText(): string {
 	return [
 		"luals-docs",
 		"",
-		"Generate Starlight Markdown from Lua doc comments.",
+		"Generate API Markdown from Lua doc comments.",
 		"",
 		"Usage",
 		"  luals-docs [build] [options]",
@@ -54,8 +53,8 @@ export function usageText(): string {
 		"                         Default: search parent directories",
 		"  -o, --out <dir>        Markdown output directory",
 		"                         Overrides config outputDir",
-		"  -s, --sidebar <file>   Starlight sidebar JSON path",
-		"                         Overrides config sidebarPath",
+		"  --index-json <file>    Index JSON path",
+		"                         Overrides config indexJson",
 		"  -h, --help             Show this help",
 		"  -v, --version          Show the version",
 		"",
@@ -75,8 +74,8 @@ export function formatBuildSummary(result: GenerateResult): string {
 				: `${result.removedCount} stale files`;
 		lines.push(`Removed ${stale}`);
 	}
-	if (result.sidebarPath) {
-		lines.push(`Wrote sidebar to ${result.sidebarPath}`);
+	if (result.indexJson) {
+		lines.push(`Wrote index JSON to ${result.indexJson}`);
 	}
 	return lines.join("\n");
 }
@@ -167,7 +166,7 @@ async function main(): Promise<void> {
 		: loadConfigFromCwd();
 	const result = runDocsBuild(config, {
 		outDir: args.outDir,
-		sidebarPath: args.sidebarPath,
+		indexJson: args.indexJson,
 	});
 	console.log(formatBuildSummary(result));
 }

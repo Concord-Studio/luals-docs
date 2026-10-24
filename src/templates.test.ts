@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import { memberCallVariants } from "./call-signature.js";
 import type { ParsedMember } from "./parse-source.js";
@@ -24,12 +27,11 @@ test("frontmatter quotes text and keeps order 0", () => {
 	);
 	assert.match(page, /title: "World: give"/);
 	assert.match(page, /description: "A world\."/);
-	assert.match(page, /slug: api\/world\nsidebar:\n {2}order: 0\n/);
-	assert.match(page, /maxHeadingLevel: 2\n---\n\n## Require\n/);
-	assert.doesNotMatch(page, /hidden:/);
+	assert.match(page, /route: api\/world\norder: 0\n/);
+	assert.match(page, /---\n\n## Require\n/);
 });
 
-test("member and type pages hide the sidebar entry", () => {
+test("member and type pages omit order", () => {
 	for (const kind of ["member", "type"] as const) {
 		const page = renderDocument(
 			templates,
@@ -41,7 +43,7 @@ test("member and type pages hide the sidebar entry", () => {
 			},
 			"Body",
 		);
-		assert.match(page, /sidebar:\n {2}hidden: true\n/);
+		assert.match(page, /route: api\/world\/emit\n---\n/);
 		assert.doesNotMatch(page, /order:/);
 	}
 });
@@ -73,6 +75,44 @@ test("member template renders the signature, arguments, and parent link", () => 
 	assert.match(body, /### Arguments\n\n\| Name \| Type \| Description \|/);
 	assert.match(body, /\| `value` \| string \| Next value \|/);
 	assert.match(body, /### Usage\n\n```lua\nwidget:update\(1\)\n```/);
+});
+
+test("a templates directory overrides only the files it contains", () => {
+	const dir = mkdtempSync(path.join(os.tmpdir(), "luals-docs-templates-"));
+	try {
+		writeFileSync(
+			path.join(dir, "frontmatter.njk"),
+			"TITLE {{ title }}\n---\n",
+		);
+		const custom = loadTemplates(dir);
+		const page = renderDocument(
+			custom,
+			{
+				title: "World",
+				description: "A world.",
+				route: "api/world",
+				kind: "hub",
+				order: 1,
+			},
+			"Body",
+		);
+		assert.match(page, /^TITLE World\n---\nBody\n/);
+		assert.equal(
+			custom
+				.render("index", {
+					groups: [
+						{
+							label: "Classes",
+							items: [{ label: "A", href: "/a", blurb: "" }],
+						},
+					],
+				})
+				.trimEnd(),
+			"## Classes\n\n- [A](/a)",
+		);
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+	}
 });
 
 test("index template keeps one link per line", () => {

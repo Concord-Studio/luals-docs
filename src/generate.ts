@@ -18,6 +18,7 @@ import {
 	typeRouteSlug,
 } from "./barrel-md.js";
 import type { ResolvedConfig } from "./config.js";
+import { writeIndexJson } from "./index-json.js";
 import { buildManifestForScope, collectIndexScope } from "./index-scope.js";
 import type { ParsedPage } from "./parse-source.js";
 import { parseSourcePages } from "./parse-source.js";
@@ -34,7 +35,6 @@ import {
 	typeSummaryForPage,
 } from "./render-types.js";
 import { buildSeeIndex } from "./see-index.js";
-import { writeStarlightSidebarJson } from "./starlight-sidebar.js";
 import { loadTemplates, renderDocument, type Templates } from "./templates.js";
 import {
 	buildTypeIndex,
@@ -45,7 +45,7 @@ import {
 export interface GenerateOptions {
 	config: ResolvedConfig;
 	outDir?: string;
-	sidebarPath?: string;
+	indexJson?: string;
 }
 
 export interface Manifest {
@@ -131,7 +131,7 @@ export interface GenerateResult {
 	pageCount: number;
 	fileCount: number;
 	removedCount: number;
-	sidebarPath?: string;
+	indexJson?: string;
 }
 
 export function runGenerate(options: GenerateOptions): GenerateResult {
@@ -264,10 +264,10 @@ export function runGenerate(options: GenerateOptions): GenerateResult {
 
 	const removedCount = cleanupOutputDir(outDir, writtenRelPaths);
 
-	const sidebarPath = options.sidebarPath ?? config.sidebarPath;
-	const resolvedSidebar = sidebarPath ? path.resolve(sidebarPath) : undefined;
-	if (resolvedSidebar) {
-		writeStarlightSidebarJson(resolvedSidebar, pages, config);
+	const indexJson = options.indexJson ?? config.indexJson;
+	const resolvedIndex = indexJson ? path.resolve(indexJson) : undefined;
+	if (resolvedIndex) {
+		writeIndexJson(resolvedIndex, pages, config);
 	}
 
 	return {
@@ -276,6 +276,6 @@ export function runGenerate(options: GenerateOptions): GenerateResult {
 		pageCount: pages.length,
 		fileCount: writtenRelPaths.size,
 		removedCount,
-		sidebarPath: resolvedSidebar,
+		indexJson: resolvedIndex,
 	};
 }

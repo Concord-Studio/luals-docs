@@ -20,7 +20,7 @@ test("parseArgs reads flags, equals form, and the build alias", () => {
 	assert.equal(args.version, false);
 	assert.equal(args.configPath, "cfg.json");
 	assert.equal(args.outDir, "docs/api");
-	assert.equal(args.sidebarPath, undefined);
+	assert.equal(args.indexJson, undefined);
 });
 
 test("parseArgs rejects unknown input and missing values", () => {
@@ -44,25 +44,25 @@ test("parseArgs rejects unknown input and missing values", () => {
 	assert.throws(() => parseArgs(["--out", "--config", "cfg.json"]), CliError);
 });
 
-test("usage text lists the config, output, and sidebar flags", () => {
+test("usage text lists the config, output, and index JSON flags", () => {
 	const help = usageText();
 	assert.match(help, /--config <file>/);
 	assert.match(help, /--out <dir>/);
-	assert.match(help, /--sidebar <file>/);
+	assert.match(help, /--index-json <file>/);
 });
 
-test("formatBuildSummary reports files, removals, and sidebar", () => {
+test("formatBuildSummary reports files, removals, and index JSON", () => {
 	const text = formatBuildSummary({
 		manifest: { sidebar: [], symbolIndex: {} },
 		outDir: "/tmp/docs",
 		pageCount: 2,
 		fileCount: 5,
 		removedCount: 1,
-		sidebarPath: "/tmp/sidebar.json",
+		indexJson: "/tmp/index.json",
 	});
 	assert.match(text, /Wrote 5 files \(2 pages\) to \/tmp\/docs/);
 	assert.match(text, /Removed 1 stale file/);
-	assert.match(text, /Wrote sidebar to \/tmp\/sidebar.json/);
+	assert.match(text, /Wrote index JSON to \/tmp\/index.json/);
 });
 
 test("--help prints usage and exits 0", () => {

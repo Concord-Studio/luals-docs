@@ -1,4 +1,4 @@
-/** Site-root path for a Starlight API route (e.g. `/api/world`). */
+/** Site-root path for an API route (e.g. `/api/world`). */
 export function apiHref(routeSlug: string): string {
 	return `/${routeSlug}`;
 }
@@ -18,7 +18,7 @@ export function outputMdRelPath(luaRelFile: string, inputDir?: string): string {
 	return `${normalized}.md`;
 }
 
-/** Default Starlight slug from workspace-relative Lua path. */
+/** Default route from a workspace-relative Lua path. */
 export function defaultRouteSlug(
 	luaRelFile: string,
 	routePrefix: string,
@@ -41,7 +41,7 @@ export function defaultRouteSlug(
 	return `${routePrefix}/${rel}`;
 }
 
-/** Starlight / rehype-style heading ids (e.g. `SystemClass` → `systemclass`). */
+/** Heading id (e.g. `SystemClass` → `systemclass`). */
 export function anchor(name: string): string {
 	return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
