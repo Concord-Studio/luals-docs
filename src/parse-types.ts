@@ -1,5 +1,9 @@
 import { parseLua } from "./lua-source.js";
-import { type ParsedFieldTag, parseFieldTag } from "./type-parse-utils.js";
+import {
+	type ParsedFieldTag,
+	parseFieldTag,
+	stripNamespacePrefix,
+} from "./type-parse-utils.js";
 
 export type { FieldScope, ParsedFieldTag } from "./type-parse-utils.js";
 
@@ -40,7 +44,10 @@ function parseClassRest(rest: string): { name: string; extends?: string } {
 /**
  * Parse `@class` / `@alias` / `@field` from the file's leading `---` comment block.
  */
-export function parseTypesFromHeaderLines(lines: string[]): ParsedType[] {
+export function parseTypesFromHeaderLines(
+	lines: string[],
+	namespace?: string,
+): ParsedType[] {
 	const types: ParsedType[] = [];
 	let current: ParsedType | null = null;
 	let pendingProse: string[] = [];
@@ -70,10 +77,12 @@ export function parseTypesFromHeaderLines(lines: string[]): ParsedType[] {
 			pendingProse = [];
 			current = {
 				kind: "class",
-				name,
+				name: stripNamespacePrefix(name, namespace),
 				summary,
 				description,
-				extends: extendsBase,
+				extends: extendsBase
+					? stripNamespacePrefix(extendsBase, namespace)
+					: undefined,
 				fields: [],
 				deprecated,
 			};
@@ -91,10 +100,10 @@ export function parseTypesFromHeaderLines(lines: string[]): ParsedType[] {
 			pendingProse = [];
 			types.push({
 				kind: "alias",
-				name,
+				name: stripNamespacePrefix(name, namespace),
 				summary,
 				description,
-				definition,
+				definition: stripNamespacePrefix(definition, namespace),
 				fields: [],
 				deprecated,
 			});
@@ -104,7 +113,10 @@ export function parseTypesFromHeaderLines(lines: string[]): ParsedType[] {
 		if (kind === "field" && current?.kind === "class") {
 			const field = parseFieldTag(t);
 			if (field && !field.deprecated) {
-				current.fields.push(field);
+				current.fields.push({
+					...field,
+					types: stripNamespacePrefix(field.types, namespace),
+				});
 			}
 		}
 	}

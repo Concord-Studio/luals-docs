@@ -42,3 +42,31 @@ test("groups loads in array order and sidebar is rejected", () => {
 		rmSync(root, { recursive: true, force: true });
 	}
 });
+
+test("namespace must be a Lua identifier", () => {
+	const root = path.join(os.tmpdir(), `luals-docs-namespace-${process.pid}`);
+	const groups = [{ label: "Classes", kinds: ["class"] }];
+	try {
+		writeFixture(root, { inputDir: "lib", groups, namespace: "Concord" });
+		const config = loadConfig(path.join(root, ".luals-docs.json"));
+		assert.equal(config.namespace, "Concord");
+
+		writeFixture(root, {
+			inputDir: "lib",
+			groups,
+			namespace: "Concord.Entity",
+		});
+		assert.throws(
+			() => loadConfig(path.join(root, ".luals-docs.json")),
+			/"namespace" must be a Lua identifier/,
+		);
+
+		writeFixture(root, { inputDir: "lib", groups, namespace: "" });
+		assert.throws(
+			() => loadConfig(path.join(root, ".luals-docs.json")),
+			/"namespace" must be a Lua identifier/,
+		);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});

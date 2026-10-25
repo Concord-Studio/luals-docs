@@ -42,6 +42,25 @@ test("canonicalSeeKey accepts hash colon or dot", () => {
 	assert.equal(canonicalSeeKey("World:emit"), "World#emit");
 });
 
+test("canonicalSeeKey keeps a dotted owner and uses the last separator", () => {
+	assert.equal(
+		canonicalSeeKey("Concord.World#serialize"),
+		"Concord.World#serialize",
+	);
+	assert.equal(
+		canonicalSeeKey("Concord.World:serialize"),
+		"Concord.World#serialize",
+	);
+	assert.equal(
+		canonicalSeeKey("Concord.Components.reject"),
+		"Concord.Components#reject",
+	);
+	assert.equal(
+		canonicalSeeKey("Concord.Entity.SERIALIZE_BY_DEFAULT"),
+		"Concord.Entity#SERIALIZE_BY_DEFAULT",
+	);
+});
+
 test("renderSeeAlsoSection dedupes and lists links", () => {
 	const seeIndex = buildSeeIndex([
 		{
@@ -64,6 +83,38 @@ test("renderSeeAlsoSection dedupes and lists links", () => {
 	assert.match(md, /\[World:addSystem\]\(\/api\/world\/add-system\)/);
 	assert.match(md, /\[World:emit\]\(\/api\/world\/emit\)/);
 	assert.equal(md.split("World:emit").length, 2);
+});
+
+test("resolveSeeHref links a dotted type name", () => {
+	const typeIndex: TypeIndex = new Map([
+		[
+			"Concord.System",
+			{
+				routeSlug: "api/system",
+				anchor: "concordsystem",
+				relFile: "lib/system.lua",
+			},
+		],
+	]);
+	assert.equal(
+		resolveSeeHref("Concord.System", new Map(), typeIndex),
+		"/api/system#concordsystem",
+	);
+});
+
+test("seeDisplayLabel uses the indexed separator for a dotted owner", () => {
+	const seeIndex = buildSeeIndex([
+		{
+			className: "Concord.World",
+			title: "Concord.World",
+			routeSlug: "api/world",
+			members: [{ name: "serialize", callSeparator: ":" }],
+		} as ParsedPage,
+	]);
+	assert.equal(
+		seeDisplayLabel("Concord.World#serialize", seeIndex),
+		"Concord.World:serialize",
+	);
 });
 
 test("resolveSeeHref falls back to type index", () => {

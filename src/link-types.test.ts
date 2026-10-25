@@ -30,6 +30,36 @@ test("linkifyTypes links types inside fun()", () => {
 	assert.match(out, /string/);
 });
 
+test("linkifyTypes links a dotted type as one name", () => {
+	const out = linkifyTypes(
+		"Concord.Entity|nil",
+		index({
+			Concord: "api",
+			"Concord.Entity": "api/entity",
+		}),
+	);
+	assert.match(out, /\[Concord\.Entity\]\(\/api\/entity#concord\.entity\)/);
+	assert.equal(out.includes("[Concord]"), false);
+	assert.match(out, /\|nil/);
+});
+
+test("linkifyTypes does not link a namespace prefix inside an unknown dotted name", () => {
+	const out = linkifyTypes("Concord.World", index({ Concord: "api" }));
+	assert.equal(out, "Concord.World");
+});
+
+test("linkifyTypes links dotted names inside fun()", () => {
+	const out = linkifyTypes(
+		"fun(self: Concord.Entity): Concord.World",
+		index({
+			"Concord.Entity": "api/entity",
+			"Concord.World": "api/world",
+		}),
+	);
+	assert.match(out, /\[Concord\.Entity\]\(\/api\/entity#concord\.entity\)/);
+	assert.match(out, /\[Concord\.World\]\(\/api\/world#concord\.world\)/);
+});
+
 test("linkifyTypes leaves primitives unchanged", () => {
 	const out = linkifyTypes("table|string", index({}));
 	assert.equal(out, "table|string");

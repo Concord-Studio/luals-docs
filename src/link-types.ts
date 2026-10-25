@@ -20,6 +20,20 @@ function isIdentPart(c: string): boolean {
 	return /[\w]/.test(c);
 }
 
+/** `Entity` or `Concord.Entity`, stopping before a trailing `.` that is not an identifier. */
+function readQualifiedName(
+	segment: string,
+	start: number,
+): { name: string; end: number } {
+	let j = start + 1;
+	while (j < segment.length && isIdentPart(segment.charAt(j))) j++;
+	while (segment.charAt(j) === "." && isIdentStart(segment.charAt(j + 1))) {
+		j++;
+		while (j < segment.length && isIdentPart(segment.charAt(j))) j++;
+	}
+	return { name: segment.slice(start, j), end: j };
+}
+
 /** Replace known type names in a type string with Markdown links. */
 export function linkifyTypes(typeStr: string, index: TypeIndex): string {
 	return rewriteTypeSegment(typeStr, index);
@@ -52,12 +66,10 @@ function rewriteTypeSegment(segment: string, index: TypeIndex): string {
 		}
 
 		if (isIdentStart(c)) {
-			let j = i + 1;
-			while (j < segment.length && isIdentPart(segment.charAt(j))) j++;
-			const word = segment.slice(i, j);
-			const linked = linkTypeName(word, index);
-			out += linked ?? word;
-			i = j;
+			const { name, end } = readQualifiedName(segment, i);
+			const linked = linkTypeName(name, index);
+			out += linked ?? name;
+			i = end;
 			continue;
 		}
 

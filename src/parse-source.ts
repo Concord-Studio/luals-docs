@@ -13,7 +13,11 @@ import { assertOneIndexPerFolder } from "./index-scope.js";
 import { parseLua } from "./lua-source.js";
 import { type ParsedType, parseTypesFromHeaderLines } from "./parse-types.js";
 import { mergeUsageBlocks } from "./parse-usage.js";
-import { parseParam } from "./type-parse-utils.js";
+import {
+	parseParam,
+	parseReturnTag,
+	stripNamespacePrefix,
+} from "./type-parse-utils.js";
 
 export type { ParsedType } from "./parse-types.js";
 
@@ -167,6 +171,7 @@ function memberFromMemberDoc(
 	fnName: string,
 	signature: string,
 	doc: ReturnType<typeof parseMemberDocBlock>,
+	namespace: string | undefined,
 ): Omit<ParsedMember, "callSeparator"> {
 	const params: ParsedMember["params"] = [];
 	const returns: ParsedMember["returns"] = [];
@@ -174,27 +179,20 @@ function memberFromMemberDoc(
 
 	for (const tag of doc.tags) {
 		const { kind, rest } = parseTagLine(tag);
-		if (kind === "param") params.push(parseParam(rest));
-		else if (kind === "return") {
-			const m = rest.match(/^(\S+)(?:\s+(.*))?$/s);
-			const types = m?.[1] ?? "any";
-			const tail = m?.[2]?.trim() ?? "";
-			let name = "";
-			let desc = tail;
-			const nameMaybe = tail.match(/^([a-z_][\w]*)\s+(.*)$/s);
-			if (nameMaybe) {
-				const shortName = nameMaybe[1];
-				if (
-					shortName !== undefined &&
-					shortName.length <= 3 &&
-					/^[a-z_][\w]*$/.test(shortName)
-				) {
-					name = shortName;
-					desc = nameMaybe[2]?.trim() ?? "";
-				}
-			}
-			returns.push({ name, types, desc });
-		} else if (kind === "see") see.push(rest);
+		if (kind === "param") {
+			const param = parseParam(rest);
+			params.push({
+				...param,
+				types: stripNamespacePrefix(param.types, namespace),
+			});
+		} else if (kind === "return") {
+			const parsed = parseReturnTag(rest);
+			returns.push({
+				name: parsed.name,
+				types: stripNamespacePrefix(parsed.types, namespace),
+				desc: parsed.desc,
+			});
+		} else if (kind === "see") see.push(stripNamespacePrefix(rest, namespace));
 	}
 
 	return {
@@ -205,7 +203,10 @@ function memberFromMemberDoc(
 		usageBlocks: doc.usageBlocks,
 		params,
 		returns,
-		overloads: doc.overloads,
+		overloads: doc.overloads.map((overload) => ({
+			...overload,
+			signature: stripNamespacePrefix(overload.signature, namespace),
+		})),
 		see,
 	};
 }
@@ -215,7 +216,10 @@ function isDocsTagLine(line: string): boolean {
 	return t.startsWith("@docs");
 }
 
-function parseFileHeader(headerLines: string[]): {
+function parseFileHeader(
+	headerLines: string[],
+	namespace: string | undefined,
+): {
 	docs: PageDocsMeta;
 	className?: string;
 	moduleName?: string;
@@ -223,7 +227,11 @@ function parseFileHeader(headerLines: string[]): {
 	exports: ParsedExport[];
 	types: ParsedType[];
 } {
-	const { tagLines, className } = collectHeaderTagLines(headerLines);
+	const collected = collectHeaderTagLines(headerLines);
+	const { tagLines } = collected;
+	const className = collected.className
+		? stripNamespacePrefix(collected.className, namespace)
+		: undefined;
 	const docs = parseDocsMetaFromHeaderTags(tagLines);
 
 	let moduleName: string | undefined;
@@ -248,7 +256,7 @@ function parseFileHeader(headerLines: string[]): {
 		}
 	}
 
-	const types = parseTypesFromHeaderLines(headerLines);
+	const types = parseTypesFromHeaderLines(headerLines, namespace);
 	const exports = exportsFromTypes(types, className);
 
 	return {
@@ -269,7 +277,7 @@ export function parseSourcePages(config: ResolvedConfig): ParsedPage[] {
 		const text = readFileSync(full, "utf8");
 		const lua = parseLua(text);
 
-		const header = parseFileHeader(lua.headerLines);
+		const header = parseFileHeader(lua.headerLines, config.namespace);
 		if (!header.docs.enabled) continue;
 
 		const docs = applyIndexSlugDefault(
@@ -306,7 +314,12 @@ export function parseSourcePages(config: ResolvedConfig): ParsedPage[] {
 				continue;
 			}
 
-			const member = memberFromMemberDoc(fn.name, fn.signature, memberDoc);
+			const member = memberFromMemberDoc(
+				fn.name,
+				fn.signature,
+				memberDoc,
+				config.namespace,
+			);
 			member.usageBlocks = mergeUsageBlocks(member.usageBlocks, fn.blockUsages);
 			members.push({
 				...member,

@@ -20,7 +20,7 @@ function member(
 	};
 }
 
-test("usage assigns a different return type and skips a self return", () => {
+test("usage assigns a different return type and a self return", () => {
 	const created = memberCallVariants(
 		member({
 			signature: "function World:create()",
@@ -35,7 +35,63 @@ test("usage assigns a different return type and skips a self return", () => {
 			returns: [{ name: "", types: "Widget", desc: "" }],
 		}),
 	);
-	assert.equal(chained[0]?.usage, "widget:update( value )");
+	assert.equal(chained[0]?.usage, "widget = widget:update( value )");
+	assert.equal(chained[0]?.returns[0]?.name, "widget");
+});
+
+test("usage uses the last segment of a dotted return type", () => {
+	const created = memberCallVariants(
+		member({
+			signature: "function Component.new(name)",
+			returns: [{ name: "", types: "Concord.ComponentClass", desc: "" }],
+		}),
+	);
+	assert.equal(created[0]?.usage, "componentClass = Component.new( name )");
+
+	const named = memberCallVariants(
+		member({
+			signature: "function Component.new(name)",
+			returns: [{ name: "component", types: "ComponentClass", desc: "" }],
+		}),
+	);
+	assert.equal(named[0]?.usage, "component = Component.new( name )");
+	assert.equal(named[0]?.returns[0]?.name, "component");
+	assert.equal(named[0]?.returns[0]?.types, "ComponentClass");
+
+	const chained = memberCallVariants(
+		member({
+			signature: "function Entity:give(name)",
+			returns: [{ name: "", types: "Concord.Entity", desc: "" }],
+		}),
+	);
+	assert.equal(chained[0]?.usage, "entity = entity:give( name )");
+
+	const constructed = memberCallVariants(
+		member({
+			signature: "function Entity.new()",
+			returns: [{ name: "", types: "Concord.Entity", desc: "" }],
+		}),
+	);
+	assert.equal(constructed[0]?.usage, "entity = Entity.new()");
+});
+
+test("a documented any return stays in the returns table", () => {
+	const variants = memberCallVariants(
+		member({
+			signature: "function World:getResource(name)",
+			params: [{ name: "name", types: "string", desc: "Name of the resource" }],
+			returns: [
+				{
+					name: "resource",
+					types: "any",
+					desc: "The resource, or nil if none was set",
+				},
+			],
+		}),
+	);
+	assert.equal(variants[0]?.usage, "resource = world:getResource( name )");
+	assert.equal(variants[0]?.returns[0]?.name, "resource");
+	assert.equal(variants[0]?.returns[0]?.types, "any");
 });
 
 test("usage names table results without a domain-specific variable", () => {
@@ -93,4 +149,63 @@ test("overload descriptions and optionality come from the source annotations", (
 	assert.equal(named.params[0]?.name, "query?");
 	assert.equal(named.params[0]?.types, "string?");
 	assert.equal(named.params[0]?.desc, "Lookup key");
+});
+
+test("a documented return name is used for an overload", () => {
+	const variants = memberCallVariants(
+		member({
+			signature: "function System.new(name, definition)",
+			returns: [{ name: "system", types: "SystemClass", desc: "" }],
+			overloads: [
+				{
+					signature:
+						"fun(definition: table<string, FilterDefinition>): SystemClass",
+					description: "",
+				},
+			],
+		}),
+	);
+	assert.equal(variants[0]?.usage, "system = System.new( name, definition )");
+	const overload = variants.find(
+		(variant) => variant.usage === "system = System.new( definition )",
+	);
+	assert.ok(overload);
+	assert.equal(overload.returns[0]?.name, "system");
+	assert.equal(overload.returns[0]?.types, "SystemClass");
+	assert.equal(overload.params[0]?.types, "table<string, FilterDefinition>");
+});
+
+test("a union return name is not assigned on a nil overload", () => {
+	const variants = memberCallVariants(
+		member({
+			signature: "function World:query(def, onMatch)",
+			returns: [
+				{
+					name: "matches",
+					types: "table|nil",
+					desc: "The list of matches, or nil if onMatch was a callback",
+				},
+			],
+			overloads: [
+				{
+					signature:
+						"fun(self: World, def: FilterDefinition, onMatch: fun(e: Entity)): nil",
+					description: "Pass a function as onMatch.",
+				},
+				{
+					signature:
+						"fun(self: World, def: FilterDefinition, onMatch?: table): table",
+					description: "Collect matches into a table.",
+				},
+			],
+		}),
+	);
+	assert.equal(
+		variants.find((variant) => variant.returns.length === 0)?.usage,
+		"world:query( def, onMatch )",
+	);
+	const collecting = variants.find((variant) => variant.returns.length > 0);
+	assert.equal(collecting?.usage, "matches = world:query( def, onMatch )");
+	assert.equal(collecting?.returns[0]?.name, "matches");
+	assert.equal(collecting?.returns[0]?.types, "table");
 });

@@ -22,6 +22,11 @@ export interface LualsDocsConfigFile {
 	/** Directory of Nunjucks page templates. Defaults to the built-in set. */
 	templatesDir?: string;
 	routePrefix?: string;
+	/**
+	 * Lua identifier. A leading `Namespace.` is removed from documented type
+	 * names, type strings, and `@see` targets. The namespace class itself stays.
+	 */
+	namespace?: string;
 	/** Ordered groups of `@docs kind` names. */
 	groups?: KindGroup[];
 	/** Removed. Use `groups`. */
@@ -36,6 +41,7 @@ export interface ResolvedConfig {
 	indexJson?: string;
 	templatesDir: string;
 	routePrefix: string;
+	namespace?: string;
 	groups: KindGroup[];
 	/** Workspace-relative `.lua` paths (discovered under `inputDir`). */
 	pages: string[];
@@ -65,6 +71,15 @@ export function findConfigPath(startDir: string): string {
 	throw new Error(
 		`${CONFIG_FILENAME} not found (searched upward from ${path.resolve(startDir)})`,
 	);
+}
+
+function assertNamespace(namespace: unknown): asserts namespace is string {
+	if (
+		typeof namespace !== "string" ||
+		!/^[A-Za-z_][A-Za-z0-9_]*$/.test(namespace)
+	) {
+		throw new Error(`${CONFIG_FILENAME}: "namespace" must be a Lua identifier`);
+	}
 }
 
 function assertKindName(
@@ -140,6 +155,8 @@ export function loadConfig(configPath: string): ResolvedConfig {
 
 	const outputDir = resolveFrom(workspaceRoot, raw.outputDir ?? "docs/api");
 	const routePrefix = raw.routePrefix ?? "api";
+	if (raw.namespace !== undefined) assertNamespace(raw.namespace);
+	const namespace = raw.namespace;
 	const indexJson = raw.indexJson
 		? resolveFrom(workspaceRoot, raw.indexJson)
 		: undefined;
@@ -160,6 +177,7 @@ export function loadConfig(configPath: string): ResolvedConfig {
 		indexJson,
 		templatesDir,
 		routePrefix,
+		namespace,
 		groups,
 		pages,
 	};

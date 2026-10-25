@@ -1,44 +1,91 @@
 /** Shared parsing for LuaLS type strings in `@param`, `@return`, and `@field` tags. */
 
+/**
+ * Remove a configured `Namespace.` prefix from a type name or type string.
+ * `Concord` itself is unchanged. Identifiers that merely end in that word are left alone.
+ */
+export function stripNamespacePrefix(
+	text: string,
+	namespace: string | undefined,
+): string {
+	if (!namespace || !text.includes(`${namespace}.`)) return text;
+	return text.replace(new RegExp(`(?<![\\w])${namespace}\\.`, "g"), "");
+}
+
+/**
+ * Split a LuaLS type from the description that follows it.
+ * Spaces inside `()`, `<>`, `{}`, and `[]` stay in the type, as do `|` unions.
+ */
+export function splitTypeAndDescription(input: string): {
+	types: string;
+	desc: string;
+} {
+	const source = input.trim();
+	let depth = 0;
+	let i = 0;
+	while (i < source.length) {
+		const c = source.charAt(i);
+		if (c === "<" || c === "(" || c === "{" || c === "[") {
+			depth++;
+			i++;
+			continue;
+		}
+		if (c === ">" || c === ")" || c === "}" || c === "]") {
+			if (depth > 0) depth--;
+			i++;
+			continue;
+		}
+		if (depth === 0 && /\s/.test(c)) {
+			let j = i + 1;
+			while (j < source.length && /\s/.test(source.charAt(j))) j++;
+			const soFar = source.slice(0, i).trimEnd();
+			if (
+				source.charAt(j) === "|" ||
+				soFar.endsWith("|") ||
+				soFar.endsWith(":")
+			) {
+				i = j;
+				continue;
+			}
+			break;
+		}
+		i++;
+	}
+	return {
+		types: source.slice(0, i).trim(),
+		desc: source.slice(i).trim(),
+	};
+}
+
 export function parseParamTypeAndDesc(tail: string): {
 	types: string;
 	desc: string;
 } {
-	let rest = tail.trim();
-	if (rest.startsWith("fun(")) {
-		let depth = 0;
-		let i = 0;
-		for (; i < rest.length; i++) {
-			const c = rest.charAt(i);
-			if (c === "(") depth++;
-			else if (c === ")") {
-				depth--;
-				if (depth === 0) {
-					i++;
-					break;
-				}
-			}
-		}
-		let types = rest.slice(0, i);
-		rest = rest.slice(i).trim();
-		if (rest.startsWith(":")) {
-			const retPart = rest.slice(1).trim();
-			const { types: retTypes, desc: afterRet } =
-				parseParamTypeAndDesc(retPart);
-			if (retTypes) types += `: ${retTypes}`;
-			return { types, desc: afterRet };
-		}
-		while (rest.startsWith("|")) {
-			const pipe = rest.match(/^\|(\S+)/);
-			if (!pipe) break;
-			types += `|${pipe[1]}`;
-			rest = rest.slice(pipe[0].length).trim();
-		}
-		return { types, desc: rest };
+	return splitTypeAndDescription(tail);
+}
+
+/**
+ * LuaLS `---@return <type> [name] [description]`.
+ * A lowercase identifier is the name. `#` forces a description and no name.
+ */
+export function parseReturnTag(rest: string): {
+	types: string;
+	name: string;
+	desc: string;
+} {
+	const { types, desc: afterType } = splitTypeAndDescription(rest);
+	if (afterType.startsWith("#")) {
+		return { types, name: "", desc: afterType.replace(/^#\s?/, "") };
 	}
-	const m = rest.match(/^(\S+)\s+(.*)$/s);
-	if (m?.[1]) return { types: m[1], desc: m[2]?.trim() ?? "" };
-	return { types: rest, desc: "" };
+	const nameMatch = afterType.match(/^([a-z_][\w]*)(?:\s+([\s\S]*))?$/);
+	if (nameMatch?.[1]) {
+		return {
+			types,
+			name: nameMatch[1],
+			desc: nameMatch[2]?.trim() ?? "",
+		};
+	}
+	return { types, name: "", desc: afterType };
 }
 
 const FIELD_SCOPES = new Set(["private", "protected", "public", "package"]);
@@ -85,12 +132,10 @@ export function parseParam(rest: string): {
 	desc: string;
 } {
 	if (rest.startsWith("...")) {
-		const m = rest.match(/^\.\.\.\s*(\S+)?\s*(.*)$/);
-		return {
-			name: "...",
-			types: m?.[1] ?? "any",
-			desc: m?.[2] ?? "",
-		};
+		const after = rest.slice(3).trim();
+		if (!after) return { name: "...", types: "any", desc: "" };
+		const { types, desc } = splitTypeAndDescription(after);
+		return { name: "...", types: types || "any", desc };
 	}
 	const nameMatch = rest.match(/^(\w+\??)\s+/);
 	if (!nameMatch)

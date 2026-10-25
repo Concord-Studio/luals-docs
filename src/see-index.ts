@@ -27,10 +27,15 @@ export function buildSeeIndex(pages: ParsedPage[]): SeeIndex {
 	return index;
 }
 
+/** `World` or `Concord.World`, then a final `:`, `.`, or `#` and a member. */
+const SEE_REF = /^([A-Za-z_][\w]*(?:\.[A-Za-z_]\w*)*)([:.#])([A-Za-z_]\w*)$/;
+
+/** `World` or `Concord.System`. */
+const TYPE_REF = /^([A-Za-z_][\w]*(?:\.[A-Za-z_]\w*)*)$/;
+
 /** Normalize `World:emit`, `World.emit`, or `World#emit` to `World#emit`. */
 export function canonicalSeeKey(ref: string): string | null {
-	const trimmed = ref.trim();
-	const m = trimmed.match(/^(\w+)([:.#])(\w+)$/);
+	const m = ref.trim().match(SEE_REF);
 	if (!m?.[1] || !m[3]) return null;
 	return `${m[1]}#${m[3]}`;
 }
@@ -41,7 +46,7 @@ export function seeDisplayLabel(ref: string, seeIndex: SeeIndex): string {
 		const entry = seeIndex.get(key);
 		if (entry) return entry.label;
 	}
-	const m = ref.trim().match(/^(\w+)([:.#])(\w+)$/);
+	const m = ref.trim().match(SEE_REF);
 	if (m?.[1] && m[3]) return `${m[1]}${m[2] === "#" ? ":" : m[2]}${m[3]}`;
 	return ref.replace(/#/g, ":");
 }
@@ -58,7 +63,7 @@ export function resolveSeeHref(
 		if (entry) return entry.href;
 	}
 
-	const typeMatch = trimmed.match(/^(\w+)$/);
+	const typeMatch = trimmed.match(TYPE_REF);
 	if (typeMatch?.[1]) {
 		const entry = typeIndex.get(typeMatch[1]);
 		if (entry) {

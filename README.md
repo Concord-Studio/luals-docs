@@ -14,6 +14,7 @@ Place `.luals-docs.json` at the repository root. The CLI walks upward from the c
 | **`routePrefix`** | First URL segment for automatic routes (default `api`). |
 | **`indexJson`** | Optional path for the documentation index JSON (see below). |
 | **`templatesDir`** | Nunjucks templates for the page layout. Defaults to the built-in set in `templates/`. A directory here overrides only the files it contains. |
+| **`namespace`** | Optional Lua identifier. A leading `Namespace.` is removed from documented type names, type strings, and `@see` targets. The class that is the namespace itself is kept. |
 
 Page **description** comes from the file’s leading summary comment (first prose line in the `---` block).
 
