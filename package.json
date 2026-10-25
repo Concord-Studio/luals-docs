@@ -1,6 +1,6 @@
 {
 	"name": "@concord.studio/luals-docs",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"description": "Generate API documentation from Lua Language Server annotations.",
 	"repository": {
 		"type": "git",
